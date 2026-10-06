@@ -37,23 +37,41 @@ void setup() {
 }
 
 void loop() {
-  driveMotor(1, 255);
-  driveMotor(2, 255);
-  driveMotor(3, 255);
-  driveMotor(4, 255);
+  driveMecanum(255, 0, 0);
   delay(1000);
+  driveMecanum(0, 255, 0);
+  delay(1000);
+  driveMecanum(0, 0, 255);
+  delay(1000);
+  driveMecanum(0, 0, 0);
+  delay(500);
+  driveMecanum(255, 255, 255);
+  delay(1000);
+  driveMecanum(255, 255, 0);
+  delay(1000);
+  driveMecanum(0, 0, 0);
+  delay(1000);
+}
 
-  driveMotor(1, -255);
-  driveMotor(2, -255);
-  driveMotor(3, -255);
-  driveMotor(4, -255);
-  delay(1000);
+void driveMecanum(int fwdPWD, int strPWD, int trnPWD) {
+  int M1Vel = fwdPWD + strPWD - trnPWD;
+  int M2Vel = fwdPWD - strPWD - trnPWD;
+  int M3Vel = fwdPWD - strPWD + trnPWD;
+  int M4Vel = fwdPWD + strPWD + trnPWD;
 
-  driveMotor(1, 0);
-  driveMotor(2, 0);
-  driveMotor(3, 0);
-  driveMotor(4, 0);
-  delay(1000);
+  float maxVel = max(max(M1Vel, M2Vel), max(M3Vel, M4Vel));
+
+  if (maxVel > 255) {
+    M1Vel = (int) (255.0 * (float) M1Vel / maxVel);
+    M2Vel = (int) (255.0 * (float) M2Vel / maxVel);
+    M3Vel = (int) (255.0 * (float) M3Vel / maxVel);
+    M4Vel = (int) (255.0 * (float) M4Vel / maxVel);
+  }
+
+  driveMotor(1, M1Vel);
+  driveMotor(2, M2Vel);
+  driveMotor(3, M3Vel);
+  driveMotor(4, M4Vel);
 }
 
 void driveMotor(int motor, int pwm) {

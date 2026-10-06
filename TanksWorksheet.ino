@@ -58,9 +58,9 @@ void setup() {
 void loop() {
   driveMecanum(100, 0, 0);
   
-  if (readFrontBumpSwitch()) {
-    driveMecanum(-100, 0, 0);
-    delay(3000);
+  if (readFrontDistanceSensor() <= 20) {
+    driveMecanum(0, 0, 0);
+    delay(1000);
     driveMecanum(0, 0, 255);
     delay(1800);
   }

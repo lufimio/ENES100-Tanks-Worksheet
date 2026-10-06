@@ -38,26 +38,20 @@ void setup() {
 
 void loop() {
   driveMecanum(255, 0, 0);
+  delay(3000);
+  driveMecanum(0, 0, -255);
+  delay(1800);
+  driveMecanum(255, 0, 0);
   delay(1000);
-  driveMecanum(0, 255, 0);
-  delay(1000);
-  driveMecanum(0, 0, 255);
-  delay(1000);
-  driveMecanum(0, 0, 0);
-  delay(500);
-  driveMecanum(255, 255, 255);
-  delay(1000);
-  driveMecanum(255, 255, 0);
-  delay(1000);
-  driveMecanum(0, 0, 0);
-  delay(1000);
+  driveMecanum(0, 0, -255);
+  delay(1800);
 }
 
 void driveMecanum(int fwdPWD, int strPWD, int trnPWD) {
-  int M1Vel = fwdPWD + strPWD - trnPWD;
-  int M2Vel = fwdPWD - strPWD - trnPWD;
-  int M3Vel = fwdPWD - strPWD + trnPWD;
-  int M4Vel = fwdPWD + strPWD + trnPWD;
+  int M1Vel = fwdPWD + strPWD + trnPWD;
+  int M2Vel = fwdPWD - strPWD + trnPWD;
+  int M3Vel = fwdPWD - strPWD - trnPWD;
+  int M4Vel = fwdPWD + strPWD - trnPWD;
 
   float maxVel = max(max(M1Vel, M2Vel), max(M3Vel, M4Vel));
 

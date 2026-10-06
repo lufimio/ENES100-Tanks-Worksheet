@@ -25,26 +25,45 @@
 #define PIN_WIFI_TX 52
 #define PIN_WIFI_RX 50
 
+int direction = 1;
+
 void setup() {
-  pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
-  pinMode(PIN_MOTOR_1_REVERSE, OUTPUT);
-  pinMode(PIN_MOTOR_2_FORWARD, OUTPUT);
-  pinMode(PIN_MOTOR_2_REVERSE, OUTPUT);
-  pinMode(PIN_MOTOR_3_FORWARD, OUTPUT);
-  pinMode(PIN_MOTOR_3_REVERSE, OUTPUT);
-  pinMode(PIN_MOTOR_4_FORWARD, OUTPUT);
-  pinMode(PIN_MOTOR_4_REVERSE, OUTPUT);
+    // Motors
+    pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
+    pinMode(PIN_MOTOR_1_REVERSE, OUTPUT);
+    pinMode(PIN_MOTOR_2_FORWARD, OUTPUT);
+    pinMode(PIN_MOTOR_2_REVERSE, OUTPUT);
+    pinMode(PIN_MOTOR_3_FORWARD, OUTPUT);
+    pinMode(PIN_MOTOR_3_REVERSE, OUTPUT);
+    pinMode(PIN_MOTOR_4_FORWARD, OUTPUT);
+    pinMode(PIN_MOTOR_4_REVERSE, OUTPUT);
+
+    // Bump Sensors
+    pinMode(PIN_BUMP_FRONT, INPUT);
+    pinMode(PIN_BUMP_REAR, INPUT);
+
+    // Ultrasonic Sensors
+    pinMode(PIN_US_FRONT_TRIG, OUTPUT);
+    pinMode(PIN_US_FRONT_ECHO, INPUT);
+    pinMode(PIN_US_REAR_TRIG, OUTPUT);
+    pinMode(PIN_US_REAR_ECHO, INPUT);
+
+    // Infrared Sensors
+    pinMode(PIN_IR_1, INPUT);
+    pinMode(PIN_IR_2, INPUT);
+    pinMode(PIN_IR_3, INPUT);
+    pinMode(PIN_IR_4, INPUT);
 }
 
 void loop() {
-  driveMecanum(255, 0, 0);
-  delay(3000);
-  driveMecanum(0, 0, -255);
-  delay(1800);
-  driveMecanum(255, 0, 0);
-  delay(1000);
-  driveMecanum(0, 0, -255);
-  delay(1800);
+  driveMecanum(100, 0, 0);
+  
+  if (readFrontBumpSwitch()) {
+    driveMecanum(-100, 0, 0);
+    delay(3000);
+    driveMecanum(0, 0, 255);
+    delay(1800);
+  }
 }
 
 void driveMecanum(int fwdPWD, int strPWD, int trnPWD) {
@@ -83,12 +102,50 @@ void driveMotor(int motor, int pwm) {
     forwardPin = PIN_MOTOR_4_FORWARD;
     backwardPin = PIN_MOTOR_4_REVERSE;
   } else return;
-  
+
+  pwm = max(pwm, -255);
+  pwm = min(pwm, 255);
+ 
   if (pwm >= 0) {
-    analogWrite(forwardPin, pwm);
+    analogWrite(forwardPin, abs(pwm));
     analogWrite(backwardPin, 0);
   } else {
     analogWrite(forwardPin, 0);
-    analogWrite(backwardPin, -pwm);
+    analogWrite(backwardPin, abs(pwm));
   }
+}
+
+bool readFrontBumpSwitch() {
+  return digitalRead(PIN_BUMP_FRONT);
+}
+
+bool readRearBumpSwitch() {
+  return digitalRead(PIN_BUMP_REAR);
+}
+
+float readFrontDistanceSensor() {
+    digitalWrite(PIN_US_FRONT_TRIG, 0);
+    delayMicroseconds(2);
+    digitalWrite(PIN_US_FRONT_TRIG, 1);
+    delayMicroseconds(10);
+    digitalWrite(PIN_US_FRONT_TRIG, 0);
+
+    int duration = pulseIn(PIN_US_FRONT_ECHO, 1);
+    if (duration < 20000 && duration > 0) {
+        return min(duration * .0001715, 1);
+    } else return -1;
+}
+
+
+float readRearDistanceSensor() {
+    digitalWrite(PIN_US_REAR_TRIG, 0);
+    delayMicroseconds(2);
+    digitalWrite(PIN_US_REAR_TRIG, 1);
+    delayMicroseconds(10);
+    digitalWrite(PIN_US_REAR_TRIG, 0);
+
+    int duration = pulseIn(PIN_US_REAR_ECHO, 1);
+    if (duration < 20000 && duration > 0) {
+        return min(duration * .0001715, 1);
+    } else return -1;
 }

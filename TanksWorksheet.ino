@@ -38,9 +38,22 @@ void setup() {
 
 void loop() {
   driveMotor(1, 255);
+  driveMotor(2, 255);
+  driveMotor(3, 255);
+  driveMotor(4, 255);
+  delay(1000);
+
+  driveMotor(1, -255);
   driveMotor(2, -255);
   driveMotor(3, -255);
-  driveMotor(4, 255);
+  driveMotor(4, -255);
+  delay(1000);
+
+  driveMotor(1, 0);
+  driveMotor(2, 0);
+  driveMotor(3, 0);
+  driveMotor(4, 0);
+  delay(1000);
 }
 
 void driveMotor(int motor, int pwm) {

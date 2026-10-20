@@ -30,6 +30,18 @@
 volatile float lastKnownTheta = 0;
 volatile float lastKnownX = 0;
 volatile float lastKnownY = 0;
+volatile long lastUpdateMillis = 0;
+
+const float maxAngularVelocity = 0.87;
+const float tolerance = 0.1;
+const float correctionFactor = 1;
+
+const int minTurnPWM = 50;
+const int maxTurnPWM = 255;
+const float slowdownAngle = 0.8;
+
+const unsigned long maxTurnTime = 2000;
+const unsigned long trackingTimeout = 2000;
 
 void setup() {
   Enes100.begin("Team 4", HYDROGEN, 15, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
@@ -62,13 +74,88 @@ void setup() {
 }
 
 void loop() {
-  Enes100.print("(");
-  Enes100.print(getX());
-  Enes100.print(", ");
-  Enes100.print(getY());
-  Enes100.print(", ");
-  Enes100.print(getTheta());
-  Enes100.println(")");
+  waitForTracking();
+  turnToAngle(PI / 2);
+}
+
+void turnToAngle(float angle) {
+  unsigned long startTime = millis();
+
+  while (millis() - startTime < 10000) {
+    // Wait for a fresh tracking update
+    unsigned long lastUpdate = lastUpdateMillis;
+
+    while (lastUpdateMillis == lastUpdate) {
+      updateInfo();
+
+      if (millis() - lastUpdate > trackingTimeout) {
+        stopDrive();
+        return;
+      }
+
+      delay(10);
+    }
+
+    float delta = normalizeAngle(getTheta() - angle);
+    float error = abs(delta);
+    Enes100.println(delta);
+
+    if (error < tolerance)
+      break;
+
+    // Reduce turning speed near target
+    float speedFactor = constrain(
+      error / slowdownAngle,
+      0.0f,
+      1.0f
+    );
+
+    int pwm = minTurnPWM +
+      (int)((maxTurnPWM - minTurnPWM) * speedFactor);
+
+    // Estimate angular velocity at selected PWM
+    float angularVelocity =
+      maxAngularVelocity * ((float)pwm / maxTurnPWM);
+
+    // Calculate predicted turn duration
+    unsigned long duration = (unsigned long)(
+      error / angularVelocity * 1000.0f * correctionFactor
+    );
+
+    duration = min(duration, maxTurnTime);
+
+    // Execute predicted turn
+    driveMecanum(0, 0, delta > 0 ? pwm : -pwm);
+    delay(duration);
+    stopDrive();
+
+    // Allow robot to settle
+    delay(100);
+  }
+
+  stopDrive();
+}
+
+bool waitForTracking() {
+  unsigned long startTime = millis();
+
+  while (millis() - startTime < trackingTimeout) {
+    updateInfo();
+
+    if (millis() - lastUpdateMillis < 200)
+      return true;
+
+    delay(10);
+  }
+
+  return false;
+}
+
+float normalizeAngle(float angle) {
+  angle = fmodf(angle + PI, 2 * PI);
+  if (angle < 0)
+    angle += 2 * PI;
+  return angle - PI;
 }
 
 void updateInfo() {
@@ -78,29 +165,27 @@ void updateInfo() {
 }
 
 float getX() {
-  if (abs(Enes100.getX() - -1) > 1e-4)
+  if (abs(Enes100.getX() - -1) > 1e-4) {
     lastKnownX = Enes100.getX();
+    lastUpdateMillis = millis();
+  }
   return lastKnownX;
 }
 
 float getY() {
-  if (abs(Enes100.getY() - -1) > 1e-4)
+  if (abs(Enes100.getY() - -1) > 1e-4) {
     lastKnownY = Enes100.getY();
+    lastUpdateMillis = millis();
+  }
   return lastKnownY;
 }
 
 float getTheta() {
-  if (abs(Enes100.getTheta() - -1) > 1e-4)
+  if (abs(Enes100.getTheta() - -1) > 1e-4) {
     lastKnownTheta = Enes100.getTheta();
-  return lastKnownTheta;
-}
-
-void turnToAngle(float angle) {
-  float delta = Enes100.getTheta() - angle;
-  while (abs(delta) < 0.01) {
-    driveMecanum(0, 0, delta < 0 ? 255 : -255);
+    lastUpdateMillis = millis();
   }
-  stopDrive();
+  return lastKnownTheta;
 }
 
 void stopDrive() {
@@ -113,7 +198,10 @@ void driveMecanum(int fwdPWD, int strPWD, int trnPWD) {
   int M3Vel = fwdPWD - strPWD - trnPWD;
   int M4Vel = fwdPWD + strPWD - trnPWD;
 
-  float maxVel = max(max(M1Vel, M2Vel), max(M3Vel, M4Vel));
+  int maxVel = max(
+    max(abs(M1Vel), abs(M2Vel)),
+    max(abs(M3Vel), abs(M4Vel))
+  );
 
   if (maxVel > 255) {
     M1Vel = (int) (255.0 * (float) M1Vel / maxVel);

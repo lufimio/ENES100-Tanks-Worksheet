@@ -1,4 +1,6 @@
-#include "Tank.h"
+#include "Enes100.h"
+
+#define PI 3.14159265358979323
 
 #define PIN_MOTOR_1_FORWARD 11
 #define PIN_MOTOR_1_REVERSE 10
@@ -25,45 +27,84 @@
 #define PIN_WIFI_TX 52
 #define PIN_WIFI_RX 50
 
-int direction = 1;
+volatile float lastKnownTheta = 0;
+volatile float lastKnownX = 0;
+volatile float lastKnownY = 0;
 
 void setup() {
-    // Motors
-    pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
-    pinMode(PIN_MOTOR_1_REVERSE, OUTPUT);
-    pinMode(PIN_MOTOR_2_FORWARD, OUTPUT);
-    pinMode(PIN_MOTOR_2_REVERSE, OUTPUT);
-    pinMode(PIN_MOTOR_3_FORWARD, OUTPUT);
-    pinMode(PIN_MOTOR_3_REVERSE, OUTPUT);
-    pinMode(PIN_MOTOR_4_FORWARD, OUTPUT);
-    pinMode(PIN_MOTOR_4_REVERSE, OUTPUT);
+  Enes100.begin("Team 4", HYDROGEN, 15, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
 
-    // Bump Sensors
-    pinMode(PIN_BUMP_FRONT, INPUT);
-    pinMode(PIN_BUMP_REAR, INPUT);
+  // Motors
+  pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
+  pinMode(PIN_MOTOR_1_REVERSE, OUTPUT);
+  pinMode(PIN_MOTOR_2_FORWARD, OUTPUT);
+  pinMode(PIN_MOTOR_2_REVERSE, OUTPUT);
+  pinMode(PIN_MOTOR_3_FORWARD, OUTPUT);
+  pinMode(PIN_MOTOR_3_REVERSE, OUTPUT);
+  pinMode(PIN_MOTOR_4_FORWARD, OUTPUT);
+  pinMode(PIN_MOTOR_4_REVERSE, OUTPUT);
 
-    // Ultrasonic Sensors
-    pinMode(PIN_US_FRONT_TRIG, OUTPUT);
-    pinMode(PIN_US_FRONT_ECHO, INPUT);
-    pinMode(PIN_US_REAR_TRIG, OUTPUT);
-    pinMode(PIN_US_REAR_ECHO, INPUT);
+  // Bump Sensors
+  pinMode(PIN_BUMP_FRONT, INPUT);
+  pinMode(PIN_BUMP_REAR, INPUT);
 
-    // Infrared Sensors
-    pinMode(PIN_IR_1, INPUT);
-    pinMode(PIN_IR_2, INPUT);
-    pinMode(PIN_IR_3, INPUT);
-    pinMode(PIN_IR_4, INPUT);
+  // Ultrasonic Sensors
+  pinMode(PIN_US_FRONT_TRIG, OUTPUT);
+  pinMode(PIN_US_FRONT_ECHO, INPUT);
+  pinMode(PIN_US_REAR_TRIG, OUTPUT);
+  pinMode(PIN_US_REAR_ECHO, INPUT);
+
+  // Infrared Sensors
+  pinMode(PIN_IR_1, INPUT);
+  pinMode(PIN_IR_2, INPUT);
+  pinMode(PIN_IR_3, INPUT);
+  pinMode(PIN_IR_4, INPUT);
 }
 
 void loop() {
-  driveMecanum(100, 0, 0);
-  
-  if (readFrontDistanceSensor() <= 20) {
-    driveMecanum(0, 0, 0);
-    delay(1000);
-    driveMecanum(0, 0, 255);
-    delay(1800);
+  Enes100.print("(");
+  Enes100.print(getX());
+  Enes100.print(", ");
+  Enes100.print(getY());
+  Enes100.print(", ");
+  Enes100.print(getTheta());
+  Enes100.println(")");
+}
+
+void updateInfo() {
+  getX();
+  getY();
+  getTheta();
+}
+
+float getX() {
+  if (abs(Enes100.getX() - -1) > 1e-4)
+    lastKnownX = Enes100.getX();
+  return lastKnownX;
+}
+
+float getY() {
+  if (abs(Enes100.getY() - -1) > 1e-4)
+    lastKnownY = Enes100.getY();
+  return lastKnownY;
+}
+
+float getTheta() {
+  if (abs(Enes100.getTheta() - -1) > 1e-4)
+    lastKnownTheta = Enes100.getTheta();
+  return lastKnownTheta;
+}
+
+void turnToAngle(float angle) {
+  float delta = Enes100.getTheta() - angle;
+  while (abs(delta) < 0.01) {
+    driveMecanum(0, 0, delta < 0 ? 255 : -255);
   }
+  stopDrive();
+}
+
+void stopDrive() {
+  driveMecanum(0, 0, 0);
 }
 
 void driveMecanum(int fwdPWD, int strPWD, int trnPWD) {
@@ -105,7 +146,7 @@ void driveMotor(int motor, int pwm) {
 
   pwm = max(pwm, -255);
   pwm = min(pwm, 255);
- 
+
   if (pwm >= 0) {
     analogWrite(forwardPin, abs(pwm));
     analogWrite(backwardPin, 0);
@@ -124,28 +165,28 @@ bool readRearBumpSwitch() {
 }
 
 float readFrontDistanceSensor() {
-    digitalWrite(PIN_US_FRONT_TRIG, 0);
-    delayMicroseconds(2);
-    digitalWrite(PIN_US_FRONT_TRIG, 1);
-    delayMicroseconds(10);
-    digitalWrite(PIN_US_FRONT_TRIG, 0);
+  digitalWrite(PIN_US_FRONT_TRIG, 0);
+  delayMicroseconds(2);
+  digitalWrite(PIN_US_FRONT_TRIG, 1);
+  delayMicroseconds(10);
+  digitalWrite(PIN_US_FRONT_TRIG, 0);
 
-    int duration = pulseIn(PIN_US_FRONT_ECHO, 1);
-    if (duration < 20000 && duration > 0) {
-        return min(duration * .0001715, 1);
-    } else return -1;
+  int duration = pulseIn(PIN_US_FRONT_ECHO, 1);
+  if (duration < 20000 && duration > 0) {
+    return min(duration * .0001715, 1);
+  } else return -1;
 }
 
 
 float readRearDistanceSensor() {
-    digitalWrite(PIN_US_REAR_TRIG, 0);
-    delayMicroseconds(2);
-    digitalWrite(PIN_US_REAR_TRIG, 1);
-    delayMicroseconds(10);
-    digitalWrite(PIN_US_REAR_TRIG, 0);
+  digitalWrite(PIN_US_REAR_TRIG, 0);
+  delayMicroseconds(2);
+  digitalWrite(PIN_US_REAR_TRIG, 1);
+  delayMicroseconds(10);
+  digitalWrite(PIN_US_REAR_TRIG, 0);
 
-    int duration = pulseIn(PIN_US_REAR_ECHO, 1);
-    if (duration < 20000 && duration > 0) {
-        return min(duration * .0001715, 1);
-    } else return -1;
+  int duration = pulseIn(PIN_US_REAR_ECHO, 1);
+  if (duration < 20000 && duration > 0) {
+    return min(duration * .0001715, 1);
+  } else return -1;
 }

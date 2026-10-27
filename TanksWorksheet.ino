@@ -83,17 +83,14 @@ void turnToAngle(float angle) {
   unsigned long startTime = millis();
 
   while (millis() - startTime < 10000) {
-    // Wait for a fresh tracking update
     unsigned long lastUpdate = lastUpdateMillis;
 
     while (lastUpdateMillis == lastUpdate) {
       updateInfo();
-
       if (millis() - lastUpdate > trackingTimeout) {
         stopDrive();
         return;
       }
-
       delay(10);
     }
 
@@ -104,33 +101,16 @@ void turnToAngle(float angle) {
     if (error < tolerance)
       break;
 
-    // Reduce turning speed near target
-    float speedFactor = constrain(
-      error / slowdownAngle,
-      0.0f,
-      1.0f
-    );
-
-    int pwm = minTurnPWM +
-      (int)((maxTurnPWM - minTurnPWM) * speedFactor);
-
-    // Estimate angular velocity at selected PWM
-    float angularVelocity =
-      maxAngularVelocity * ((float)pwm / maxTurnPWM);
-
-    // Calculate predicted turn duration
-    unsigned long duration = (unsigned long)(
-      error / angularVelocity * 1000.0f * correctionFactor
-    );
-
+    float speedFactor = constrain(error / slowdownAngle, 0.0f, 1.0f);
+    int pwm = minTurnPWM + (int)((maxTurnPWM - minTurnPWM) * speedFactor);
+    float angularVelocity = maxAngularVelocity * ((float)pwm / maxTurnPWM);
+    unsigned long duration = (unsigned long)(error / angularVelocity * 1000.0f * correctionFactor);
     duration = min(duration, maxTurnTime);
 
-    // Execute predicted turn
     driveMecanum(0, 0, delta > 0 ? pwm : -pwm);
     delay(duration);
     stopDrive();
 
-    // Allow robot to settle
     delay(100);
   }
 
@@ -196,10 +176,8 @@ bool waitForTracking() {
 
   while (millis() - startTime < trackingTimeout) {
     updateInfo();
-
     if (millis() - lastUpdateMillis < 200)
       return true;
-
     delay(10);
   }
 

@@ -32,6 +32,8 @@ volatile float lastKnownX = 0;
 volatile float lastKnownY = 0;
 volatile long lastUpdateMillis = 0;
 
+const float wheelDiameter = 0;
+
 const float maxAngularVelocity = 0.87;
 const float tolerance = 0.1;
 const float correctionFactor = 1;
@@ -76,7 +78,7 @@ void setup() {
 
 void loop() {
   waitForTracking();
-  turnToAngle(PI / 2);
+  moveToPosition(1, 1);
 }
 
 void turnToAngle(float angle) {
@@ -120,7 +122,7 @@ void turnToAngle(float angle) {
 void moveToPosition(float targetX, float targetY) {
   unsigned long startTime = millis();
 
-  while (millis() - startTime < maxMoveTime) {
+  while (millis() - startTime < 10000) {
     updateInfo();
 
     if (millis() - lastUpdateMillis > 10000) {

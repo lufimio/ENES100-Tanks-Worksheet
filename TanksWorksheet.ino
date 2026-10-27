@@ -127,7 +127,7 @@ void moveToPosition(float targetX, float targetY) {
 
     if (millis() - lastUpdateMillis > 10000) {
       stopDrive();
-      return false;
+      return;
     }
 
     float dx = targetX - getX();
@@ -137,6 +137,7 @@ void moveToPosition(float targetX, float targetY) {
 
     if (distance < 0.08) {
       stopDrive();
+      return;
     }
 
     float theta = getTheta();

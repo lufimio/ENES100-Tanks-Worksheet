@@ -39,6 +39,7 @@ const float correctionFactor = 1;
 const int minTurnPWM = 50;
 const int maxTurnPWM = 255;
 const float slowdownAngle = 0.8;
+const float slowdownDistance = 0.5;
 
 const unsigned long maxTurnTime = 2000;
 const unsigned long trackingTimeout = 2000;
@@ -135,6 +136,60 @@ void turnToAngle(float angle) {
 
   stopDrive();
 }
+
+void moveToPosition(float targetX, float targetY) {
+  unsigned long startTime = millis();
+
+  while (millis() - startTime < maxMoveTime) {
+    updateInfo();
+
+    if (millis() - lastUpdateMillis > 10000) {
+      stopDrive();
+      return false;
+    }
+
+    float dx = targetX - getX();
+    float dy = targetY - getY();
+
+    float distance = sqrtf(dx * dx + dy * dy);
+
+    if (distance < 0.08) {
+      stopDrive();
+    }
+
+    float theta = getTheta();
+
+    float forward = dx * cosf(theta) + dy * sinf(theta);
+    float strafe = -dx * sinf(theta) + dy * cosf(theta);
+
+    float speedFactor = constrain(
+      distance / slowdownDistance,
+      0.0f,
+      1.0f
+    );
+
+    int pwm = minTurnPWM +
+      (int)((maxTurnPWM - minTurnPWM) * speedFactor);
+
+    int forwardPWM = (int)(forward / distance * pwm);
+    int strafePWM = (int)(strafe / distance * pwm);
+
+    int maxPWM = max(abs(forwardPWM), abs(strafePWM));
+
+    if (maxPWM > 255) {
+      forwardPWM = (int)(forwardPWM * 255.0f / maxPWM);
+      strafePWM = (int)(strafePWM * 255.0f / maxPWM);
+    }
+
+    driveMecanum(forwardPWM, strafePWM, 0);
+
+    delay(50);
+  }
+
+  stopDrive();
+}
+
+
 
 bool waitForTracking() {
   unsigned long startTime = millis();

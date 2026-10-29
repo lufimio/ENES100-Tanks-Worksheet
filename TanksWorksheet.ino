@@ -27,15 +27,14 @@
 #define PIN_WIFI_TX 52
 #define PIN_WIFI_RX 50
 
-volatile float lastKnownTheta = 0;
-volatile float lastKnownX = 0;
-volatile float lastKnownY = 0;
-volatile long lastUpdateMillis = 0;
+float lastKnownTheta = 0;
+float lastKnownX = 0;
+float lastKnownY = 0;
+long lastUpdateMillis = 0;
 
 const float wheelDiameter = 0;
 
 const float maxAngularVelocity = 0.87;
-const float tolerance = 0.1;
 const float correctionFactor = 1;
 
 const int minTurnPWM = 50;
@@ -78,21 +77,59 @@ void setup() {
 
 void loop() {
   waitForTracking();
-  moveToPosition(1, 1);
+
+  float startingAngle;
+
+  if (getY() < 1) {
+    startingAngle = toRadians(90);
+  } else {
+    startingAngle = toRadians(-90);
+  }
+
+  turnToAngle(startingAngle);
+
+  while (!readFrontBumpSwitch()) {
+    driveMecanum(255, 0, 0);
+    delay(50);
+  }
+  stopDrive();
+
+  // do processing tasks
+
+  while(!readRearBumpSwitch()) {
+    driveMecanum(-255, 0, 0);
+    delay(50);
+  }
+  stopDrive();
+
+  while (getX() < 2.75) {
+    driveMecanum(-10, 255, 0);
+    delay(50);
+  }
+
+  driveToPoint(3, 1.5, 0.1);
+  driveToPoint(3.75, 1.5, 0.3);
+
+  while (true) {
+    delay(10000);
+  }
 }
 
-void turnToAngle(float angle) {
+void turnToAngle(float angle, float tolerance = 0.08) {
   unsigned long startTime = millis();
 
   while (millis() - startTime < 10000) {
-    unsigned long lastUpdate = lastUpdateMillis;
+    unsigned long previousUpdate = lastUpdateMillis;
+    unsigned long waitStart = millis();
 
-    while (lastUpdateMillis == lastUpdate) {
+    while (lastUpdateMillis == previousUpdate) {
       updateInfo();
-      if (millis() - lastUpdate > trackingTimeout) {
+
+      if (millis() - waitStart >= trackingTimeout) {
         stopDrive();
         return;
       }
+
       delay(10);
     }
 
@@ -119,7 +156,7 @@ void turnToAngle(float angle) {
   stopDrive();
 }
 
-void moveToPosition(float targetX, float targetY) {
+void driveToPoint(float targetX, float targetY, float tolerance = 0.08) {
   unsigned long startTime = millis();
 
   while (millis() - startTime < 10000) {
@@ -135,7 +172,7 @@ void moveToPosition(float targetX, float targetY) {
 
     float distance = sqrtf(dx * dx + dy * dy);
 
-    if (distance < 0.08) {
+    if (distance < tolerance) {
       stopDrive();
       return;
     }
@@ -172,8 +209,6 @@ void moveToPosition(float targetX, float targetY) {
   stopDrive();
 }
 
-
-
 bool waitForTracking() {
   unsigned long startTime = millis();
 
@@ -194,6 +229,14 @@ float normalizeAngle(float angle) {
   return angle - PI;
 }
 
+float toRadians(float deg) {
+  return deg * PI / 180.0;
+}
+
+float toDegrees(float rad) {
+  return rad * 180.0 / PI;
+}
+
 void updateInfo() {
   getX();
   getY();
@@ -201,7 +244,8 @@ void updateInfo() {
 }
 
 float getX() {
-  if (abs(Enes100.getX() - -1) > 1e-4) {
+  float x = Enes100.getX()
+  if (x != -1.0f) {
     lastKnownX = Enes100.getX();
     lastUpdateMillis = millis();
   }
@@ -209,7 +253,8 @@ float getX() {
 }
 
 float getY() {
-  if (abs(Enes100.getY() - -1) > 1e-4) {
+  float y = Enes100.getY()
+  if (y != -1.0f) {
     lastKnownY = Enes100.getY();
     lastUpdateMillis = millis();
   }
@@ -217,7 +262,8 @@ float getY() {
 }
 
 float getTheta() {
-  if (abs(Enes100.getTheta() - -1) > 1e-4) {
+  float theta = Enes100.getTheta();
+  if (theta != -1.0f) {
     lastKnownTheta = Enes100.getTheta();
     lastUpdateMillis = millis();
   }

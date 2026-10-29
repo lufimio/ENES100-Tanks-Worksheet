@@ -45,6 +45,8 @@ const float slowdownDistance = 0.5;
 const unsigned long maxTurnTime = 2000;
 const unsigned long trackingTimeout = 2000;
 
+bool firstRunDone = false;
+
 void setup() {
   Enes100.begin("Team 4", HYDROGEN, 15, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
 
@@ -76,8 +78,29 @@ void setup() {
 }
 
 void loop() {
-  waitForTracking();
+  if (!firstRunDone) {
+    waitForTracking();
+    main()
+    firstRunDone = true;
+  }
+}
 
+void task2() {
+  Enes100.println("turning to 90 degrees")
+  turnToAngle(toRadians(90));
+  delay(3000);
+  Enes100.println("turning to 180 degrees")
+  turnToAngle(toRadians(180));
+  delay(3000);
+  Enes100.println("turning to 90 degrees")
+  turnToAngle(toRadians(90));
+  delay(3000);
+  Enes100.println("turning to 0 degrees")
+  turnToAngle(toRadians(0));
+  delay(3000);
+}
+
+void main() {
   float startingAngle;
 
   if (getY() < 1) {
@@ -109,10 +132,6 @@ void loop() {
 
   driveToPoint(3, 1.5, 0.1);
   driveToPoint(3.75, 1.5, 0.3);
-
-  while (true) {
-    delay(10000);
-  }
 }
 
 void turnToAngle(float angle, float tolerance = 0.08) {

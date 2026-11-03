@@ -47,8 +47,11 @@ const unsigned long trackingTimeout = 2000;
 
 bool firstRunDone = false;
 
+void turnToAngle(float angle, float tolerance = 0.08);
+void driveToPoint(float targetX, float targetY, float tolerance = 0.08);
+
 void setup() {
-  Enes100.begin("Team 4", HYDROGEN, 15, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
+  Enes100.begin("Team 4", HYDROGEN, 18, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
 
   // Motors
   pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
@@ -80,27 +83,53 @@ void setup() {
 void loop() {
   if (!firstRunDone) {
     waitForTracking();
-    main()
+    task6();
     firstRunDone = true;
   }
 }
 
 void task2() {
-  Enes100.println("turning to 90 degrees")
+  Enes100.println("turning to 90 degrees");
   turnToAngle(toRadians(90));
   delay(3000);
-  Enes100.println("turning to 180 degrees")
+  Enes100.println("turning to 180 degrees");
   turnToAngle(toRadians(180));
   delay(3000);
-  Enes100.println("turning to 90 degrees")
+  Enes100.println("turning to 90 degrees");
   turnToAngle(toRadians(90));
   delay(3000);
-  Enes100.println("turning to 0 degrees")
+  Enes100.println("turning to 0 degrees");
   turnToAngle(toRadians(0));
   delay(3000);
 }
 
-void main() {
+void task6() {
+  turnToAngle(toRadians(0));
+
+  while (getX() < 2.75) {
+    driveMecanum(0, 255, 0);
+    delay(50);
+  }
+
+  stopDrive();
+}
+
+void task7() {
+  for (int i = 0; i < 3; i++) {
+    while (!readFrontBumpSwitch()) {
+      driveMecanum(255, 0, 0);
+      delay(50);
+    }
+
+    driveMecanum(-255, 0, 0);
+    delay(500);
+
+    driveMecanum(0, 255, 0);
+    delay(1500);
+  }
+}
+
+void mainCode() {
   float startingAngle;
 
   if (getY() < 1) {
@@ -263,7 +292,7 @@ void updateInfo() {
 }
 
 float getX() {
-  float x = Enes100.getX()
+  float x = Enes100.getX();
   if (x != -1.0f) {
     lastKnownX = Enes100.getX();
     lastUpdateMillis = millis();
@@ -272,7 +301,7 @@ float getX() {
 }
 
 float getY() {
-  float y = Enes100.getY()
+  float y = Enes100.getY();
   if (y != -1.0f) {
     lastKnownY = Enes100.getY();
     lastUpdateMillis = millis();

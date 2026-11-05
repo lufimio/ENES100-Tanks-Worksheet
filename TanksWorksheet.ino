@@ -113,7 +113,7 @@ void task7() {
     delay(500);
 
     driveMecanum(0, 255, 0);
-    delay(1500);
+    delay(3000);
   }
 }
 

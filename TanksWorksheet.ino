@@ -27,10 +27,10 @@
 #define PIN_WIFI_TX 52
 #define PIN_WIFI_RX 50
 
-float lastKnownTheta = 0;
-float lastKnownX = 0;
-float lastKnownY = 0;
-long lastUpdateMillis = 0;
+float lastKnownTheta = -1000;
+float lastKnownX = -1000;
+float lastKnownY = -1000;
+long lastUpdateMillis = -1000;
 
 const float wheelDiameter = 0;
 
@@ -52,6 +52,7 @@ void driveToPoint(float targetX, float targetY, float tolerance = 0.08);
 
 void setup() {
   Enes100.begin("Team 4", HYDROGEN, 18, 1116, PIN_WIFI_TX, PIN_WIFI_RX);
+  // Enes100.begin("Team 4", HYDROGEN, 989, 1116);
 
   // Motors
   pinMode(PIN_MOTOR_1_FORWARD, OUTPUT);
@@ -83,24 +84,11 @@ void setup() {
 void loop() {
   if (!firstRunDone) {
     waitForTracking();
-    task6();
+
+    task7();
+
     firstRunDone = true;
   }
-}
-
-void task2() {
-  Enes100.println("turning to 90 degrees");
-  turnToAngle(toRadians(90));
-  delay(3000);
-  Enes100.println("turning to 180 degrees");
-  turnToAngle(toRadians(180));
-  delay(3000);
-  Enes100.println("turning to 90 degrees");
-  turnToAngle(toRadians(90));
-  delay(3000);
-  Enes100.println("turning to 0 degrees");
-  turnToAngle(toRadians(0));
-  delay(3000);
 }
 
 void task6() {
@@ -163,7 +151,7 @@ void mainCode() {
   driveToPoint(3.75, 1.5, 0.3);
 }
 
-void turnToAngle(float angle, float tolerance = 0.08) {
+void turnToAngle(float angle, float tolerance) {
   unsigned long startTime = millis();
 
   while (millis() - startTime < 10000) {
@@ -204,7 +192,7 @@ void turnToAngle(float angle, float tolerance = 0.08) {
   stopDrive();
 }
 
-void driveToPoint(float targetX, float targetY, float tolerance = 0.08) {
+void driveToPoint(float targetX, float targetY, float tolerance) {
   unsigned long startTime = millis();
 
   while (millis() - startTime < 10000) {
